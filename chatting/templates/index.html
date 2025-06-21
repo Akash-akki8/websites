@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <aside class="sidebar">
+      <div class="user-bar">
+        <h3>Users</h3>
+        <input id="userSearch" placeholder="Search user..." />
+      </div>
+      <ul id="userList" class="user-list"></ul>
+      <div class="request-panel">
+        <h4>Chat Requests</h4>
+        <ul id="requestList"></ul>
+      </div>
+    </aside>
+
+    <main class="chat-area">
+      <header class="chat-header">Welcome, {{ username }}</header>
+      <section id="messages" class="chat-messages"></section>
+      <div class="chat-input">
+        <input id="messageInput" placeholder="Type a message..." />
+        <button onclick="sendMessage()">Send</button>
+      </div>
+      <div class="call-controls">
+        <button onclick="startAudioCall()">Audio Call</button>
+        <button onclick="startVideoCall()">Video Call</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const socket = io();
+    const username = "{{ username }}";
+    socket.emit("join", username);
+
+    const sentRequests = new Set();
+
+    function sendChatRequest(target) {
+      if (sentRequests.has(target)) return alert("Request already sent.");
+      socket.emit("send_request", { from: username, target });
+      sentRequests.add(target);
+    }
+
+    function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const text = input.value.trim();
+      if (!text) return;
+      socket.emit("new_private_message", { from: username, message: text });
+      input.value = "";
+    }
+
+    socket.on("new_private_message", data => {
+      const div = document.createElement("div");
+      div.className = `message-bubble ${data.from === username ? "outgoing" : "incoming"}`;
+      div.innerHTML = `<strong>${data.from}:</strong> ${data.message} <span class="time">${data.timestamp}</span>`;
+      document.getElementById("messages").appendChild(div);
+    });
+
+    socket.on("receive_request", data => {
+      const li = document.createElement("li");
+      li.textContent = `${data.from} wants to chat`;
+      document.getElementById("requestList").appendChild(li);
+    });
+
+    socket.on("update_users", users => {
+      const list = document.getElementById("userList");
+      list.innerHTML = "";
+      users.forEach(u => {
+        if (u.name !== username) {
+          const li = document.createElement("li");
+          li.className = "user-item";
+          li.innerHTML = `
+            <span class="user-name">${u.name}</span>
+            <small>${u.active ? "🟢" : "⚪"}</small>
+            <button onclick="sendChatRequest('${u.name}')">Request</button>`;
+          list.appendChild(li);
+        }
+      });
+    });
+
+    document.getElementById("userSearch").addEventListener("input", e => {
+      const term = e.target.value.toLowerCase();
+      document.querySelectorAll(".user-item").forEach(item => {
+        const name = item.querySelector(".user-name").textContent.toLowerCase();
+        item.style.display = name.includes(term) ? "flex" : "none";
+      });
+    });
+
+    function startAudioCall() {
+      alert("Audio calling feature coming soon!");
+    }
+    function startVideoCall() {
+      alert("Video calling feature coming soon!");
+    }
+  </script>
+</body>
+</html>
