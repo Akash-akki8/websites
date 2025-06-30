@@ -1,5 +1,3 @@
-# Combined Flask Chat App with Login/Register, MongoDB, SocketIO, and Styled UI
-
 from flask import Flask, render_template, request, session, redirect, url_for
 from flask_socketio import SocketIO, emit
 from flask_pymongo import PyMongo
@@ -13,7 +11,6 @@ mongo = PyMongo(app)
 socketio = SocketIO(app)
 connected_users = {}
 
-# Routes
 @app.route('/')
 def login():
     return render_template('login.html')
@@ -51,7 +48,6 @@ def chat():
         return redirect('/')
     return render_template('index.html', username=session['username'])
 
-# Socket Events
 @socketio.on('join')
 def handle_join(username):
     connected_users[username] = {'name': username, 'active': True}
